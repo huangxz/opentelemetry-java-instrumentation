@@ -1,0 +1,9 @@
+apply from: "$rootDir/gradle/java.gradle"
+
+dependencies {
+  api deps.groovy
+  api deps.spock
+
+  api deps.bytebuddy
+  api deps.bytebuddyagent
+}
