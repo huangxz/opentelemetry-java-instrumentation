@@ -408,27 +408,3 @@ Debug logging negatively impacts the performance of your application.
 ## Roadmap to 1.0 (GA)
 
 See [GA Requirements](docs/ga-requirements.md)
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Approvers ([@open-telemetry/java-instrumentation-approvers](https://github.com/orgs/open-telemetry/teams/java-instrumentation-approvers)):
-
-- [John Watson](https://github.com/jkwatson), Splunk
-- [Mateusz Rzeszutek](https://github.com/mateuszrzeszutek), Splunk
-
-Maintainers ([@open-telemetry/java-instrumentation-maintainers](https://github.com/orgs/open-telemetry/teams/java-instrumentation-maintainers)):
-
-- [Anuraag Agrawal](https://github.com/anuraaga), AWS
-- [Nikita Salnikov-Tarnovski](https://github.com/iNikem), Splunk
-- [Trask Stalnaker](https://github.com/trask), Microsoft
-- [Tyler Benson](https://github.com/tylerbenson), DataDog
-
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
-
-Thanks to all the people who already contributed!
-
-<a href="https://github.com/open-telemetry/opentelemetry-java-instrumentation/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-java-instrumentation" />
-</a>
