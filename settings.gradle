@@ -1,0 +1,106 @@
+plugins {
+  id 'com.gradle.enterprise' version '3.0'
+  id 'com.github.burrunan.s3-build-cache' version '1.1'
+}
+
+def isCI = System.getenv("CI") != null
+def skipBuildscan = Boolean.valueOf(System.getenv("SKIP_BUILDSCAN"))
+gradleEnterprise {
+  buildScan {
+    termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+    termsOfServiceAgree = 'yes'
+
+    if (isCI && !skipBuildscan) {
+      publishAlways()
+      tag 'CI'
+    }
+  }
+}
+
+apply plugin: 'com.github.burrunan.s3-build-cache'
+
+def awsAccessKeyId = System.getenv("S3_BUILD_CACHE_ACCESS_KEY_ID")
+
+buildCache {
+  remote(com.github.burrunan.s3cache.AwsS3BuildCache) {
+    region = 'us-west-2'
+    bucket = 'opentelemetry-java-instrumentation-gradle-cache'
+    push = isCI && awsAccessKeyId != null && !awsAccessKeyId.isEmpty()
+    lookupDefaultAwsCredentials = true
+  }
+}
+
+rootProject.name = 'opentelemetry-java-instrumentation'
+
+// agent projects
+include ':opentelemetry-sdk-shaded-for-testing'
+include ':opentelemetry-api-beta-shaded-for-instrumenting'
+include ':opentelemetry-auto-annotations-beta-shaded-for-instrumenting'
+include ':opentelemetry-sdk-beta-shaded-for-instrumenting'
+include ':javaagent-bootstrap'
+include ':javaagent-spi'
+include ':javaagent-tooling'
+include ':javaagent'
+include ':load-generator'
+include ':instrumentation-api'
+include ':javaagent-api'
+include ':pennapps-metrices-exporter'
+
+// misc
+include ':testing-common'
+include ':utils:test-utils'
+
+// smoke tests
+include ':smoke-tests'
+
+include ':instrumentation:cdi-testing'
+include ':instrumentation:external-annotations'
+include ':instrumentation:http-url-connection'
+include ':instrumentation:java-classloader'
+include ':instrumentation:java-classloader:jboss-testing'
+include ':instrumentation:java-classloader:osgi-testing'
+include ':instrumentation:java-classloader:tomcat-testing'
+include ':instrumentation:java-concurrent'
+include ':instrumentation:java-httpclient'
+include ':instrumentation:jdbc'
+include ':instrumentation:pennapps-instrumentation'
+include ':instrumentation:opentelemetry-api-beta'
+include ':instrumentation:scala-concurrent'
+include ':instrumentation:servlet:glassfish-testing'
+include ':instrumentation:servlet:servlet-common'
+include ':instrumentation:servlet:servlet-2.2'
+include ':instrumentation:servlet:servlet-3.0'
+include ':instrumentation:spring:starters:jaeger-exporter-starter'
+include ':instrumentation:spring:starters:otlp-exporter-starter'
+include ':instrumentation:spring:starters:zipkin-exporter-starter'
+
+include ':instrumentation-core:reactor-3.1'
+include ':instrumentation-core:servlet-2.2'
+
+// exporter adapters
+include ":javaagent-exporters"
+include ":javaagent-exporters:jaeger"
+include ":javaagent-exporters:logging"
+include ":javaagent-exporters:otlp"
+include ":javaagent-exporters:zipkin"
+include ":javaagent-exporters:prometheus"
+
+// benchmark
+include ':benchmark'
+include ':benchmark-integration'
+include ':benchmark-integration:jetty-perftest'
+
+def setBuildFile(project) {
+  if (['javaagent', 'library', 'testing'].contains(project.projectDir.name) && project.path != ':javaagent') {
+    project.buildFileName = "${project.projectDir.parentFile.name}-${project.projectDir.name}.gradle"
+  } else {
+    project.buildFileName = "${project.name}.gradle"
+  }
+  project.children.each {
+    setBuildFile(it)
+  }
+}
+
+rootProject.children.each {
+  setBuildFile(it)
+}
