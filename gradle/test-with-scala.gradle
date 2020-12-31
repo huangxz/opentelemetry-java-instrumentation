@@ -1,0 +1,12 @@
+// Enable testing scala code in groovy spock tests.
+
+apply plugin: 'scala'
+
+dependencies {
+  implementation deps.scala
+  testImplementation deps.scala
+}
+
+compileTestGroovy {
+  classpath += files(sourceSets.test.scala.classesDirectory)
+}

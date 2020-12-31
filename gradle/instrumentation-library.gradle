@@ -1,0 +1,18 @@
+apply from: "$rootDir/gradle/java.gradle"
+apply from: "$rootDir/gradle/publish.gradle"
+apply from: "$rootDir/gradle/instrumentation-common.gradle"
+
+ext {
+  mavenGroupId = 'io.opentelemetry.instrumentation'
+}
+
+archivesBaseName = projectDir.parentFile.name
+
+dependencies {
+  api project(':instrumentation-api')
+
+  api deps.opentelemetryApi
+  api deps.opentelemetryContext
+
+  testImplementation project(':testing-common')
+}

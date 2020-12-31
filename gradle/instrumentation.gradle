@@ -1,0 +1,67 @@
+// common gradle file for instrumentation
+
+apply plugin: 'io.opentelemetry.javaagent.instrumentation-instrumentation'
+apply plugin: 'net.bytebuddy.byte-buddy'
+apply plugin: 'muzzle'
+
+ext {
+  packageInAgentBundle = true
+  mavenGroupId = 'io.opentelemetry.javaagent.instrumentation'
+}
+
+byteBuddy {
+  transformation {
+    // Applying NoOp optimizes build by applying bytebuddy plugin to only compileJava task
+    tasks = ['compileJava', 'compileScala', 'compileKotlin']
+    plugin = 'io.opentelemetry.javaagent.tooling.muzzle.collector.MuzzleCodeGenerationPlugin$NoOp'
+  }
+}
+
+apply from: "$rootDir/gradle/java.gradle"
+if (project.ext.find("skipPublish") != true) {
+  apply from: "$rootDir/gradle/publish.gradle"
+}
+
+apply from: "$rootDir/gradle/instrumentation-common.gradle"
+
+if (projectDir.name == 'javaagent') {
+  archivesBaseName = projectDir.parentFile.name
+}
+
+afterEvaluate {
+  byteBuddy {
+    transformation {
+      tasks = ['compileJava', 'compileScala', 'compileKotlin']
+      plugin = 'io.opentelemetry.javaagent.tooling.muzzle.collector.MuzzleCodeGenerationPlugin'
+      classPath = project(':javaagent-tooling').configurations.instrumentationMuzzle + configurations.runtimeClasspath + sourceSets.main.output
+    }
+  }
+
+  dependencies {
+    implementation project(':instrumentation-api')
+    implementation project(':javaagent-api')
+    // Apply common dependencies for instrumentation.
+    implementation(project(':javaagent-tooling')) {
+      // OpenTelemetry SDK is not needed for compilation, and :opentelemetry-sdk-shaded-for-testing
+      // is brought in for tests by project(:testing-common) below
+      exclude group: 'io.opentelemetry', module: 'opentelemetry-sdk'
+    }
+    implementation deps.bytebuddy
+    annotationProcessor deps.autoservice
+    implementation deps.autoservice
+    implementation deps.slf4j
+
+    // Include instrumentations instrumenting core JDK classes tp ensure interoperability with other instrumentation
+    testImplementation project(':instrumentation:java-concurrent')
+    // FIXME: we should enable this, but currently this fails tests for google http client
+    //testImplementation project(':instrumentation:http-url-connection')
+    testImplementation project(':instrumentation:java-classloader')
+
+    testImplementation project(':testing-common')
+    testAnnotationProcessor deps.autoservice
+    testImplementation deps.autoservice
+    testImplementation project(':utils:test-utils')
+
+    testImplementation deps.testcontainers
+  }
+}
