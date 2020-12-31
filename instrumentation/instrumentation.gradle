@@ -1,0 +1,94 @@
+// this project will run in isolation under the agent's classloader
+buildscript {
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+  }
+
+  dependencies {
+    classpath "net.bytebuddy:byte-buddy-gradle-plugin:${versions.bytebuddy}"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+  }
+}
+plugins {
+  id "com.github.johnrengelman.shadow"
+}
+apply from: "$rootDir/gradle/java.gradle"
+
+Project instr_project = project
+subprojects {
+  afterEvaluate { Project subProj ->
+    if (subProj.getPlugins().hasPlugin('java')) {
+      // Make it so all instrumentation subproject tests can be run with a single command.
+      instr_project.tasks.test.dependsOn(subProj.tasks.test)
+
+      if (subProj.findProperty('packageInAgentBundle')) {
+        instr_project.dependencies {
+          implementation(project(subProj.getPath()))
+        }
+      }
+    }
+  }
+}
+
+dependencies {
+  implementation project(':instrumentation-api')
+  implementation project(':javaagent-api')
+  implementation(project(':javaagent-tooling')) {
+    exclude module: ':javaagent-bootstrap'
+  }
+}
+
+configurations {
+  // exclude bootstrap dependencies from shadowJar
+  implementation.exclude module: deps.slf4j
+  implementation.exclude group: 'org.slf4j'
+  implementation.exclude group: 'io.opentelemetry', module: 'opentelemetry-api'
+}
+
+shadowJar {
+
+  mergeServiceFiles()
+
+  exclude '**/module-info.class'
+
+  // Prevents conflict with other SLF4J instances. Important for premain.
+  relocate 'org.slf4j', 'io.opentelemetry.javaagent.slf4j'
+
+  duplicatesStrategy = DuplicatesStrategy.FAIL
+
+  dependencies {
+    exclude(project(':javaagent-bootstrap'))
+  }
+
+  // rewrite library instrumentation dependencies
+  relocate("io.opentelemetry.instrumentation", "io.opentelemetry.javaagent.shaded.instrumentation") {
+    exclude "io.opentelemetry.javaagent.instrumentation.**"
+  }
+
+  // rewrite dependencies calling Logger.getLogger
+  relocate 'java.util.logging.Logger', 'io.opentelemetry.javaagent.bootstrap.PatchLogger'
+
+  // prevents conflict with library instrumentation
+  relocate 'io.opentelemetry.instrumentation.api', 'io.opentelemetry.javaagent.shaded.instrumentation.api'
+
+  // relocate OpenTelemetry API usage
+  relocate "io.opentelemetry.api", "io.opentelemetry.javaagent.shaded.io.opentelemetry.api"
+  relocate "io.opentelemetry.context", "io.opentelemetry.javaagent.shaded.io.opentelemetry.context"
+
+  // this is for instrumentation on opentelemetry-api itself
+  relocate "application.io.opentelemetry", "io.opentelemetry"
+}
+
+tasks.register("listInstrumentations") {
+  group = "Help"
+  description = "List all available instrumentation modules"
+  doFirst {
+    subprojects
+      .findAll {it.plugins.hasPlugin("muzzle")}
+      .collect {it.path}
+      .each { println it}
+  }
+}

@@ -1,0 +1,6 @@
+----------------------------------------------------------------
+2020-11-16 04:51:34.542 GMT:
+ Booting Derby version The Apache Software Foundation - Apache Derby - 10.6.1.0 - (938214): instance a816c00e-0175-cf64-d923-000000e44510 
+on database directory memory:D:\Observability\OpenTelemetric Source Code\OpenWorkspace2\opentelemetry-java-instrumentation\instrumentation\jdbc\jdbcUnitTest   with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@c387f44
+
+Database Class Loader started - derby.database.classpath=''
