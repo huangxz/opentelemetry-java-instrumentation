@@ -1,0 +1,18 @@
+group = 'io.opentelemetry.instrumentation'
+
+apply from: "$rootDir/gradle/java.gradle"
+apply from: "$rootDir/gradle/publish.gradle"
+
+dependencies {
+  api deps.opentelemetryApi
+  api deps.opentelemetryContext
+  implementation deps.slf4j
+
+  compileOnly deps.autoValueAnnotations
+  annotationProcessor deps.autoValue
+  compileOnly group: 'javax.servlet', name: 'servlet-api', version: '2.2'
+  compileOnly group: 'org.zkoss.zk', name: 'zk', version: '8.6.2'
+  testImplementation project(':testing-common')
+  testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.19.0'
+  testImplementation group: 'org.assertj', name: 'assertj-core', version: '1.7.1'
+}
