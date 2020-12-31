@@ -1,0 +1,32 @@
+plugins {
+  id "com.github.johnrengelman.shadow"
+}
+
+apply from: "$rootDir/gradle/java.gradle"
+
+dependencies {
+  implementation deps.opentelemetrySdk
+  implementation deps.opentelemetryContext
+}
+
+// OpenTelemetry SDK with shaded dependencies so that they do not conflict with other libraries (in particular guava)
+// when running various instrumentation tests (e.g. datastax-cassandra)
+// TODO this is not ideal because tests are run using this partially shaded OpenTelemetry SDK, while the agent ends up
+// running with unshaded OpenTelemetry SDK (because its in isolated class loader at that point)
+// build inst/ and use that in tests, then wouldn't need to shade guava, etc
+shadowJar {
+
+  dependencies {
+    exclude(dependency('io.opentelemetry:opentelemetry-api'))
+  }
+
+  mergeServiceFiles()
+
+  relocate "com.google", "io.opentelemetry.javaagent.shaded.com.google"
+  relocate "javax.annotation", "io.opentelemetry.javaagent.shaded.javax.annotation"
+  relocate "org.checkerframework", "io.opentelemetry.javaagent.shaded.org.checkerframework"
+  relocate "org.codehaus", "io.opentelemetry.javaagent.shaded.org.codehaus"
+
+  exclude 'META-INF/maven/**'
+  exclude 'org/codehaus/mojo/animal_sniffer/**' // this is Java 8 bytecode
+}
